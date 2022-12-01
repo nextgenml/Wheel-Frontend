@@ -37,7 +37,8 @@ app.get("/spinner-data", (req, res) => {
 
     end_date.setHours(current_time.getHours() + end_hour);
     end_date.setMinutes(spin_minute);
-
+    end_date.setSeconds(0);
+    
     let hours_diff = Math.abs(end_date.getHours() - current_time.getHours());
     if (hours_diff > 12) {
         hours_diff = hours_diff - 12;
@@ -46,15 +47,16 @@ app.get("/spinner-data", (req, res) => {
 
     let minute_diff = (time_diff / 60) % 3600;
 
-    console.log('hour ', hours_diff, "minute ", minute_diff, 'sec ', current_time.getSeconds());
+    console.log('hour ', time_diff %3600%60, "minute ", minute_diff, 'sec ', current_time.getSeconds());
+    
     res.json({
         ...spinner_data, "current_time": {
             "hours": hours_diff,
             "minutes": minute_diff,
             "seconds": current_time.getSeconds()
         },
-        "start_time": current_time,
-        "end_time": end_date
+        "start_time": current_time.toUTCString(),
+        "end_time": end_date.toUTCString()
     })
 })
 

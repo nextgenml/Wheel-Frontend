@@ -1,7 +1,7 @@
 
-export const spin_hours =[3,13,15,21]
-export const spin_minute = 46
-
+export const spin_hours =[3,9,15,21]
+export const spin_minute = 40
+export const next_spin_delay = 20
 
 export default{
     spin_hours,
