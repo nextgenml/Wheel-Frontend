@@ -37,7 +37,7 @@ app.get("/spinner-data", (req, res) => {
 
     end_date.setHours(current_time.getHours() + end_hour);
     end_date.setMinutes(spin_minute);
-    end_date.setSeconds(0);
+    end_date.setSeconds(10); //Z
     
     let hours_diff = Math.abs(end_date.getHours() - current_time.getHours());
     if (hours_diff > 12) {

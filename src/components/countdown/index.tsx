@@ -14,19 +14,18 @@ export default function CountDown({ end_date, start_date, on_Complete }: Props) 
         today.setSeconds(today.getSeconds() + 1)
         let vDate = end_date;
         const t = vDate.getTime() - today.getTime()
-
         var day = Math.floor(t / (1000 * 60 * 60 * 24));
         var hour = Math.floor(((t) % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
         var minute = Math.floor(((t) % (1000 * 60 * 60)) / (1000 * 60));
         var sec = Math.floor(((t) % (1000 * 60)) / (1000));
+        // console.log('timer time  : ',hour,minute,sec);
+        
         if (day <= 0 && hour <= 0 && minute <= 0 && sec <= 0) {
             day = hour = minute = sec = 0;
             if (on_Complete) {
                 on_Complete();
             }
             //* Stopping the timer.
-            console.log(_id);
-
             clearInterval(_id);
         }
         if (window && window.document) {
@@ -42,7 +41,7 @@ export default function CountDown({ end_date, start_date, on_Complete }: Props) 
     useEffect(() => {
         _id = setInterval(countDown, 1000)
         return () => clearInterval(_id);
-    }, [])
+    }, [start_date, end_date])
 
     return (
         <div className="container">

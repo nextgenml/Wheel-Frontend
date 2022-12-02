@@ -19,19 +19,28 @@ function App() {
   const [winner, setWinner] = useState<number | null>(null);
   const [page_no, setPageNo] = useState(1)
   const [show_spin_button, stShowSpinButton] = useState(false);
+  const [no_of_spins_remaining, setNoOfSpinsRemaining] = useState(2);
+
   const setSpinnerData = (_selected_date: Date) => {
     const spinner_data = JSON.parse(localStorage.getItem("spinner_data")!);
     const winners_data = JSON.parse(localStorage.getItem("winners_data")!);
     let winners_data_dates = Object.keys(winners_data);//*Automatically sorts
     let spinner_data_dates = Object.keys(spinner_data);
-
+    let spins_remaining = 3
     let curr_winners = winners_data[_selected_date.toLocaleDateString()]
-    let wheel_items = spinner_data[_selected_date.toLocaleDateString()]['items'] as string[];
+    let wheel_items = spinner_data[_selected_date.toLocaleDateString()] ?
+      spinner_data[_selected_date.toLocaleDateString()]['items'] : undefined;
+
     if (!curr_winners) {
+      //* getting recent date winners
       curr_winners = winners_data[winners_data_dates[winners_data_dates.length - 1]]
+      setSelectedDate(new Date(winners_data_dates[winners_data_dates.length - 1]))
     }
-    
-    let curr_hour = _selected_date.getHours();
+
+    if (!wheel_items) {
+      wheel_items = spinner_data[spinner_data_dates[spinner_data_dates.length - 4]]['items'] as string[]
+      console.log(spinner_data_dates[spinner_data_dates.length - 4]);
+    }
     //* Adding all winners into the wheel
     if (curr_winners) {
       let last_hour = '0';
@@ -40,12 +49,26 @@ function App() {
         last_hour = hour;
       }
 
-      let winners = winners_data[_selected_date.toLocaleDateString()][last_hour]['winners'] as string[];
-      winners = winners.filter(e => e != null);
+      let winners: any = winners_data[_selected_date.toLocaleDateString()][last_hour] ? ['winners'] as string[] : undefined;
+      if (!winners) {
+        winners = winners_data[winners_data_dates[winners_data_dates.length - 1]][last_hour]['winners'] as string[]
+      }
+      winners = winners.map((winner: string) => {
+        if (winner != null) {
+          spins_remaining--;
+          return winner
+        }
+      })
+      console.log(spins_remaining);
+
+      console.log(wheel_items, winners);
+      console.log('spins remaning in spinnr data ',spins_remaining);
+      
+      setNoOfSpinsRemaining(spins_remaining)
       setWinner(wheel_items.indexOf(winners[winners.length - 1]))
       setWheelItems(wheel_items)
     } else {
-      setWheelItems(spinner_data[_selected_date.toLocaleDateString()]['items']);
+      setWheelItems(wheel_items);
     }
 
   }
@@ -74,20 +97,21 @@ function App() {
     localStorage.setItem('spinner_data', JSON.stringify(spinner_data));
     localStorage.setItem("winners_data", JSON.stringify(winners_data));
     setSpinnerData(start_time);
-console.log(start_time , end_time);
+    console.log(winners_data);
 
-    setTimerEndDate(end_time)
-    setTimerStartDate(start_time)
     setWinnersData(winners_data);
     setSelectedDate(start_time);
     setLoading(false);
+    return {
+      start_time, end_time
+    }
   }
 
   const handlePrevDate = () => {
     let cur_date = new Date(selected_date.toString());
     cur_date.setDate(cur_date.getDate() - 1);
-    if (winners_data && winners_data && (cur_date.toLocaleDateString()  in winners_data)) {
-      console.log('prev day', cur_date.toLocaleDateString() );
+    if (winners_data && winners_data && (cur_date.toLocaleDateString() in winners_data)) {
+      console.log('prev day', cur_date.toLocaleDateString());
       setPageNo(page_no + 1)
       setSelectedDate(cur_date)
       setSpinnerData(cur_date)
@@ -99,11 +123,8 @@ console.log(start_time , end_time);
   const handleNextDate = () => {
     let cur_date = new Date(selected_date.toString());
     cur_date.setDate(cur_date.getDate() + 1);
-    console.log(winners_data);
-
-    
-    if (winners_data && winners_data && (cur_date.toLocaleDateString()  in winners_data)) {
-      console.log('next day', cur_date.toLocaleDateString() );
+    if (winners_data && winners_data && (cur_date.toLocaleDateString() in winners_data)) {
+      console.log('next day', cur_date.toLocaleDateString());
       setPageNo(page_no - 1)
       setSelectedDate(cur_date)
       setSpinnerData(cur_date)
@@ -112,9 +133,23 @@ console.log(start_time , end_time);
     }
   }
 
-  useEffect(() => {
-    fetchSpinnerData();
+  const onCountDownComplete = () => {
+    console.log("no_of_spins_remaining ", no_of_spins_remaining);
+    if (no_of_spins_remaining > 0) {
+      fetchSpinnerData();
+      let end_time = new Date();
+      end_time?.setSeconds(end_time.getSeconds() + 20)
+      setTimerEndDate(end_time);
+      setTimerStartDate(new Date())
+      setNoOfSpinsRemaining(no_of_spins_remaining-1)
+    }
+  }
 
+  useEffect(() => {
+    fetchSpinnerData().then(({ start_time, end_time }) => {
+      setTimerEndDate(end_time)
+      setTimerStartDate(start_time)
+    });
   }, [])
 
 
@@ -123,12 +158,12 @@ console.log(start_time , end_time);
 
       {wheel_items && !loading && winners_data &&
         <>
-          <div style={{ gap: "4rem", padding: "1rem 0" }} className='flex w-fit lg:gap-20 flex-row flex-wrap justify-center items-center mx-auto py-9'>
+          <div style={{ gap: "4rem",minHeight:"100vh", padding: "1rem 0" }} className='flex w-fit lg:gap-20 flex-row flex-wrap justify-center items-center mx-auto py-9'>
             <Wheel selected_item={winner} items={wheel_items}></Wheel>
-            <CountDown on_Complete={fetchSpinnerData} start_date={timer_start_date} end_date={timer_end_date ? timer_end_date : new Date()} />
+            <CountDown on_Complete={onCountDownComplete} start_date={timer_start_date} end_date={timer_end_date ? timer_end_date : new Date()} />
           </div>
           <div style={{ padding: "0 5rem" }} className='flex flex-col  '>
-            {show_spin_button &&
+            {/* {show_spin_button &&
               <button style={{ marginBottom: "1rem" }}
                 className='inline-block px-6 py-2 border-2 border-blue-400 text-blue-400 font-medium text-xs leading-tight uppercase rounded-full hover:bg-black hover:bg-opacity-5 focus:outline-none focus:ring-0 transition duration-150 ease-in-out w-fit self-center my-10'
                 onClick={fetchSpinnerData}>Spin</button>
@@ -140,7 +175,7 @@ console.log(start_time , end_time);
                 className="w-fit inline-block px-6 py-2 border-2 border-gray-600 text-gray-400 font-medium text-xs leading-tight uppercase rounded-full hover:bg-black hover:bg-opacity-5 focus:outline-none focus:ring-0 transition duration-150 ease-in-out w-fit self-center my-10 ">
                 Spin
               </button>
-            }
+            } */}
             <h2 className='text-white font-medium mx-auto  text-center text-4xl'>Today Winners</h2>
             <div className='flex flex-row  items-center w-fit ml-auto gap-4'>
               <svg
