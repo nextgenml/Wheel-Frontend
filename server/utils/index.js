@@ -5,7 +5,7 @@ const __dirname = path.resolve(path.dirname(''));
 
 const winner_data_file_path = path.join(__dirname, 'winners_data.json');
 const spinner_data_file_path = path.join(__dirname, 'spinner_data.json');
-
+const initial_spinner_data_file_path = path.join(__dirname, 'items.json')
 function randomItemSetter() {
     var no_of_winners_generated = 0
     let time_out = 1000 * 5 // 10 sec
@@ -28,7 +28,11 @@ function randomItemSetter() {
                 } else {
                     today_spinner_data = JSON.parse(JSON.stringify(spinner_data_file[yesterday.toLocaleDateString()]));
                 }
-
+                //* If file is empty
+                if (!today_spinner_data) {
+                    const initial_items = JSON.parse(JSON.stringify(fs.readFileSync(initial_spinner_data_file_path)));
+                    today_spinner_data = initial_items;
+                }
                 if (today_spinner_data['items'].length < 3) {
                     console.warn("Insufficient spinner items, length < 3");
                     return;
@@ -47,7 +51,6 @@ function randomItemSetter() {
                         updateWinners()
                     }
                     else if (update_time.getHours() !== hours) {
-                        console.log(seconds, update_time.getSeconds());
                         today_spinner_data['items'] = spinner_items;
                         today_spinner_data['updated_at'] = new Date().toUTCString();
                         new_spinner_data[today_date_str] = today_spinner_data
@@ -55,12 +58,13 @@ function randomItemSetter() {
                         updateWinners()
                     }
                 }
-                //* if no update_at field in spinner data
+                //* if no update_at field in spinner data add it
                 else {
                     today_spinner_data['items'] = spinner_items;
                     today_spinner_data['updated_at'] = new Date().toUTCString();
                     new_spinner_data[today_date_str] = today_spinner_data
                     fs.writeFileSync(spinner_data_file_path, JSON.stringify(new_spinner_data))
+                    updateWinners()
                 }
             }
         }
@@ -70,8 +74,6 @@ function randomItemSetter() {
 
 function updateWinners() {
     const winners_data_file = JSON.parse(fs.readFileSync(winner_data_file_path));
-    const spinner_data_file = JSON.parse(fs.readFileSync(spinner_data_file_path));
-
     let date = new Date();
     let hours = date.getHours();
 
@@ -97,11 +99,8 @@ function updateWinners() {
         const winner = current_winners_data['winners'][i];
         if (winner == null) {
             const spinner_data_file = JSON.parse(fs.readFileSync(spinner_data_file_path));
-            let yesterday = new Date();
-            yesterday.setDate(yesterday.getDate() - 1);
-
             let today_spinner_data = JSON.parse(JSON.stringify(spinner_data_file[today_date_str]))
-            
+
             let spinner_items = today_spinner_data['items'];
             let rand = Math.floor(Math.random() * spinner_items.length)
             current_winners_data['winners'][i] = spinner_items[rand]
@@ -112,12 +111,16 @@ function updateWinners() {
             let new_winners_data = winners_data_file;
             new_winners_data[today_date_str] = today_winners_data;
 
-            
+            let new_spinner_data = spinner_data_file;
+            today_spinner_data['items'] = spinner_items;
+            today_spinner_data['updated_at'] = new Date().toUTCString();
+            new_spinner_data[today_date_str] = today_spinner_data
+
+            fs.writeFileSync(spinner_data_file_path, JSON.stringify(new_spinner_data))
             fs.writeFileSync(winner_data_file_path, JSON.stringify(new_winners_data))
             break;
         }
     }
-    console.log('hit ');
 }
 
 export default {

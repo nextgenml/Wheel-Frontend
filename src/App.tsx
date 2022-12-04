@@ -39,7 +39,6 @@ function App() {
 
     if (!wheel_items) {
       wheel_items = spinner_data[spinner_data_dates[spinner_data_dates.length - 4]]['items'] as string[]
-      console.log(spinner_data_dates[spinner_data_dates.length - 4]);
     }
     //* Adding all winners into the wheel
     if (curr_winners) {
@@ -49,22 +48,21 @@ function App() {
         last_hour = hour;
       }
 
-      let winners: any = winners_data[_selected_date.toLocaleDateString()][last_hour] ? ['winners'] as string[] : undefined;
+      let winners;
+      if (winners_data[_selected_date.toLocaleDateString()]) {
+        winners = winners_data[_selected_date.toLocaleDateString()][last_hour]['winners']
+        winners = winners ? winners.map((winner: string) => {
+          if (winner != null) {
+            spins_remaining--;
+            return winner
+          }
+        }) : []
+      }
       if (!winners) {
         winners = winners_data[winners_data_dates[winners_data_dates.length - 1]][last_hour]['winners'] as string[]
+        winners = winners.filter((winner) => winner != null)
       }
-      winners = winners.map((winner: string) => {
-        if (winner != null) {
-          spins_remaining--;
-          return winner
-        }
-      })
-      console.log(spins_remaining);
-
-      console.log(wheel_items, winners);
-      console.log('spins remaning in spinnr data ',spins_remaining);
-      
-      setNoOfSpinsRemaining(spins_remaining)
+      // setNoOfSpinsRemaining(spins_remaining)
       setWinner(wheel_items.indexOf(winners[winners.length - 1]))
       setWheelItems(wheel_items)
     } else {
@@ -97,8 +95,6 @@ function App() {
     localStorage.setItem('spinner_data', JSON.stringify(spinner_data));
     localStorage.setItem("winners_data", JSON.stringify(winners_data));
     setSpinnerData(start_time);
-    console.log(winners_data);
-
     setWinnersData(winners_data);
     setSelectedDate(start_time);
     setLoading(false);
@@ -111,7 +107,6 @@ function App() {
     let cur_date = new Date(selected_date.toString());
     cur_date.setDate(cur_date.getDate() - 1);
     if (winners_data && winners_data && (cur_date.toLocaleDateString() in winners_data)) {
-      console.log('prev day', cur_date.toLocaleDateString());
       setPageNo(page_no + 1)
       setSelectedDate(cur_date)
       setSpinnerData(cur_date)
@@ -123,25 +118,23 @@ function App() {
   const handleNextDate = () => {
     let cur_date = new Date(selected_date.toString());
     cur_date.setDate(cur_date.getDate() + 1);
-    if (winners_data && winners_data && (cur_date.toLocaleDateString() in winners_data)) {
-      console.log('next day', cur_date.toLocaleDateString());
+    if (winners_data && page_no > 1) {
       setPageNo(page_no - 1)
       setSelectedDate(cur_date)
       setSpinnerData(cur_date)
     } else {
-      alert("You are at present date.")
+      alert("No further winners found!")
     }
   }
 
   const onCountDownComplete = () => {
-    console.log("no_of_spins_remaining ", no_of_spins_remaining);
     if (no_of_spins_remaining > 0) {
       fetchSpinnerData();
       let end_time = new Date();
       end_time?.setSeconds(end_time.getSeconds() + 20)
       setTimerEndDate(end_time);
       setTimerStartDate(new Date())
-      setNoOfSpinsRemaining(no_of_spins_remaining-1)
+      setNoOfSpinsRemaining(no_of_spins_remaining - 1)
     }
   }
 
@@ -155,10 +148,14 @@ function App() {
 
   return (
     <div className='main'>
-
+      <nav style={{ margin: "1rem auto" }} className='flex flex-row items-center justify-center object-cover w-fit'>
+        <a className='text-white font-medium first-letter:' href='#'> Contact Us </a>
+        <img src='logo.png' className='w-60 h-60' />
+        <a className='text-white font-medium first-letter:' href='#'> About Us </a>
+      </nav>
       {wheel_items && !loading && winners_data &&
         <>
-          <div style={{ gap: "4rem",minHeight:"100vh", padding: "1rem 0" }} className='flex w-fit lg:gap-20 flex-row flex-wrap justify-center items-center mx-auto py-9'>
+          <div style={{ gap: "4rem", minHeight: "90vh", padding: "1rem 0" }} className='flex w-fit lg:gap-20 flex-row flex-wrap justify-center items-center mx-auto py-9'>
             <Wheel selected_item={winner} items={wheel_items}></Wheel>
             <CountDown on_Complete={onCountDownComplete} start_date={timer_start_date} end_date={timer_end_date ? timer_end_date : new Date()} />
           </div>
@@ -273,6 +270,11 @@ function App() {
                       }
                     </tbody>
                   </table>
+                  {!(
+                    winners_data[(selected_date.toLocaleDateString() as any)]
+                  ) &&
+                    <p style={{ padding: '4rem', fontSize: "1.4rem", margin: "auto", textAlign: 'center' }} className='text-white '>No winner yet today</p>
+                  }
                 </div>
               </div>
             </div>
