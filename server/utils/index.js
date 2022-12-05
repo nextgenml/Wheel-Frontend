@@ -20,9 +20,9 @@ function randomItemSetter() {
                 const spinner_data_file = JSON.parse(fs.readFileSync(spinner_data_file_path));
                 //* If no spinner data for today copy from yesterday's data.
                 let today_spinner_data;
-                let yesterday = new Date();
-                yesterday.setDate(yesterday.getDate() - 1);
-                const today_date_str = new Date().toLocaleDateString();
+
+                const today_date_str = DateToString(new Date())
+                
                 if (spinner_data_file[today_date_str]) {
                     today_spinner_data = JSON.parse(JSON.stringify(spinner_data_file[today_date_str]))
                 }
@@ -35,7 +35,6 @@ function randomItemSetter() {
                     console.warn("Insufficient spinner items, length < 3");
                     return;
                 }
-
 
                 let update_time = new Date(today_spinner_data['updated_at'])
                 let spinner_items = today_spinner_data['items'];
@@ -54,7 +53,6 @@ function randomItemSetter() {
                         today_spinner_data['items'] = spinner_items;
                         today_spinner_data['updated_at'] = new Date().toUTCString();
                         new_spinner_data[today_date_str] = today_spinner_data
-                        console.log(JSON.stringify(new_spinner_data).length, '57');
                         fs.writeFileSync(spinner_data_file_path, JSON.stringify(new_spinner_data))
                         updateWinners()
                     }
@@ -79,7 +77,7 @@ function updateWinners() {
     let date = new Date();
     let hours = date.getHours();
 
-    const today_date_str = new Date().toLocaleDateString();
+    const today_date_str = DateToString(new Date());
 
     //*selecting by date
     let today_winners_data = winners_data_file[today_date_str];
@@ -106,7 +104,7 @@ function updateWinners() {
             let spinner_items = today_spinner_data['items'];
             let rand = Math.floor(Math.random() * spinner_items.length)
             current_winners_data['winners'][i] = spinner_items[rand]
-            current_winners_data['updated_at'] = new Date().toLocaleTimeString();
+            current_winners_data['updated_at'] = new Date().toUTCString();
             spinner_items.splice(rand, 1);
 
             today_winners_data[hours] = current_winners_data;
@@ -127,15 +125,20 @@ function updateWinners() {
 
 export function stringToDate(date_str) {
     let date = new Date();
-    date_str = date_str.split('/');
-    date.setDate(parseInt(date_str[0]));
-    date.setMonth(parseInt(date_str[1]))
-    date.setFullYear(parseInt(date_str[2]))
+    let date_str_arr= date_str.split('/');
+    date.setDate(parseInt(date_str_arr[0]));
+    date.setMonth(parseInt(date_str_arr[1])-1)
+    date.setFullYear(parseInt(date_str_arr[2]))
+
     return date;
 }
 export function DateToString(date) {
-    let date_str = `${date.getDate()}/${date.getMonth()}/${date.getFullYear()}`;
-    return date_str;
+    let d = date.getDate();
+    let d_str = d.toString();
+    if (d < 9) {
+        d_str = '0' + d.toString()
+    }
+    return `${d_str}/${date.getMonth() + 1}/${date.getFullYear()}`;
 }
 
 export default {
