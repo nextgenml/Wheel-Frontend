@@ -8,7 +8,7 @@ const spinner_data_file_path = path.join(__dirname, 'spinner_data.json');
 const initial_spinner_data_file_path = path.join(__dirname, 'items.json')
 function randomItemSetter() {
     var no_of_winners_generated = 0
-    let time_out = 1000 * 5 // 10 sec
+    let time_out = 1000 * 1 // 10 sec
     setInterval(() => {
 
         let date = new Date();
@@ -25,28 +25,28 @@ function randomItemSetter() {
                 const today_date_str = new Date().toLocaleDateString();
                 if (spinner_data_file[today_date_str]) {
                     today_spinner_data = JSON.parse(JSON.stringify(spinner_data_file[today_date_str]))
-                } else {
-                    today_spinner_data = JSON.parse(JSON.stringify(spinner_data_file[yesterday.toLocaleDateString()]));
                 }
-                //* If file is empty
-                if (!today_spinner_data) {
+                else {
                     const initial_items = JSON.parse(JSON.stringify(fs.readFileSync(initial_spinner_data_file_path)));
                     today_spinner_data = initial_items;
                 }
+
                 if (today_spinner_data['items'].length < 3) {
                     console.warn("Insufficient spinner items, length < 3");
                     return;
                 }
 
-                //* Check if today spinner data is update in this hour
+
                 let update_time = new Date(today_spinner_data['updated_at'])
                 let spinner_items = today_spinner_data['items'];
                 let new_spinner_data = spinner_data_file;
+
                 if (!isNaN(update_time.getSeconds())) {
                     if (update_time.getHours() === hours && Math.abs(seconds - update_time.getSeconds()) >= next_spin_delay) {
                         today_spinner_data['items'] = spinner_items;
                         today_spinner_data['updated_at'] = new Date().toUTCString();
                         new_spinner_data[today_date_str] = today_spinner_data
+                        console.log(JSON.stringify(new_spinner_data).length, ' 49');
                         fs.writeFileSync(spinner_data_file_path, JSON.stringify(new_spinner_data))
                         updateWinners()
                     }
@@ -54,6 +54,7 @@ function randomItemSetter() {
                         today_spinner_data['items'] = spinner_items;
                         today_spinner_data['updated_at'] = new Date().toUTCString();
                         new_spinner_data[today_date_str] = today_spinner_data
+                        console.log(JSON.stringify(new_spinner_data).length, '57');
                         fs.writeFileSync(spinner_data_file_path, JSON.stringify(new_spinner_data))
                         updateWinners()
                     }
@@ -63,6 +64,7 @@ function randomItemSetter() {
                     today_spinner_data['items'] = spinner_items;
                     today_spinner_data['updated_at'] = new Date().toUTCString();
                     new_spinner_data[today_date_str] = today_spinner_data
+                    console.log(JSON.stringify(new_spinner_data).length, '65');
                     fs.writeFileSync(spinner_data_file_path, JSON.stringify(new_spinner_data))
                     updateWinners()
                 }
@@ -115,12 +117,25 @@ function updateWinners() {
             today_spinner_data['items'] = spinner_items;
             today_spinner_data['updated_at'] = new Date().toUTCString();
             new_spinner_data[today_date_str] = today_spinner_data
-
+            console.log(JSON.stringify(new_spinner_data).length, 'updateWiiners');
             fs.writeFileSync(spinner_data_file_path, JSON.stringify(new_spinner_data))
             fs.writeFileSync(winner_data_file_path, JSON.stringify(new_winners_data))
             break;
         }
     }
+}
+
+export function stringToDate(date_str) {
+    let date = new Date();
+    date_str = date_str.split('/');
+    date.setDate(parseInt(date_str[0]));
+    date.setMonth(parseInt(date_str[1]))
+    date.setFullYear(parseInt(date_str[2]))
+    return date;
+}
+export function DateToString(date) {
+    let date_str = `${date.getDate()}/${date.getMonth()}/${date.getFullYear()}`;
+    return date_str;
 }
 
 export default {

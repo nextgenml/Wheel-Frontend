@@ -4,10 +4,11 @@ import './index.css';
 
 interface Props {
     items: string[];
-    selected_item :number | null
+    selected_item :number | null,
+    onFinish:Function
 }
 
-export default function Wheel({ items, selected_item}: Props) {
+export default function Wheel({ items, selected_item,onFinish}: Props) {
     const [spinning, setSpinning] = useState<'spinning' | ''>('');
     const [wheelVars, setwheelVars] = useState<any>({});
     
@@ -18,8 +19,11 @@ export default function Wheel({ items, selected_item}: Props) {
             '--selected-item': selected_item,
         })
         console.log('selectredd ' ,selected_item);
-        
-    }, [selected_item,items])
+        setTimeout(()=>{
+            console.log("Finished "+selected_item);
+            
+        },1000 * 10)
+    }, [selected_item,items,spinning])
 
     // const spin_wheel = () => {
     //     if (selectedItem === null) {
@@ -35,7 +39,7 @@ export default function Wheel({ items, selected_item}: Props) {
             <div className={`wheel ${spinning}`} id='spinner' style={wheelVars}>
                 {items.map((item, index) => {
                     const item_num: any = {
-                        '--item-nb': index
+                        '--item-nb': index,
                     }
                     return (
                         <div className="wheel-item" key={index} style={item_num}>

@@ -2,7 +2,11 @@
 import { useEffect, useState } from 'react';
 import Wheel from './components/wheel';
 import CountDown from './components/countdown';
-import { spin_hour_1, spin_hour_2, spin_minute } from './config';
+import Calendar from 'react-calendar';
+import { DateToString, stringToDate } from './utils';
+import 'react-calendar/dist/Calendar.css';
+
+
 
 function App() {
   var api_url = '/'
@@ -20,6 +24,7 @@ function App() {
   const [page_no, setPageNo] = useState(1)
   const [show_spin_button, stShowSpinButton] = useState(false);
   const [no_of_spins_remaining, setNoOfSpinsRemaining] = useState(2);
+  const [show_calender, setShowCalender] = useState(false);
 
   const setSpinnerData = (_selected_date: Date) => {
     const spinner_data = JSON.parse(localStorage.getItem("spinner_data")!);
@@ -27,14 +32,14 @@ function App() {
     let winners_data_dates = Object.keys(winners_data);//*Automatically sorts
     let spinner_data_dates = Object.keys(spinner_data);
     let spins_remaining = 3
-    let curr_winners = winners_data[_selected_date.toLocaleDateString()]
-    let wheel_items = spinner_data[_selected_date.toLocaleDateString()] ?
-      spinner_data[_selected_date.toLocaleDateString()]['items'] : undefined;
+    let curr_winners = winners_data[DateToString(_selected_date)]
+    let wheel_items = spinner_data[DateToString(_selected_date)] ?
+      spinner_data[DateToString(_selected_date)]['items'] : undefined;
 
     if (!curr_winners) {
       //* getting recent date winners
       curr_winners = winners_data[winners_data_dates[winners_data_dates.length - 1]]
-      setSelectedDate(new Date(winners_data_dates[winners_data_dates.length - 1]))
+      setSelectedDate(stringToDate(winners_data_dates[winners_data_dates.length - 1]))
     }
 
     if (!wheel_items) {
@@ -49,14 +54,16 @@ function App() {
       }
 
       let winners;
-      if (winners_data[_selected_date.toLocaleDateString()]) {
-        winners = winners_data[_selected_date.toLocaleDateString()][last_hour]['winners']
+      if (winners_data[DateToString(_selected_date)]) {
+        winners = winners_data[DateToString(_selected_date)][last_hour]['winners']
         winners = winners ? winners.map((winner: string) => {
           if (winner != null) {
             spins_remaining--;
             return winner
           }
         }) : []
+        console.log('spings remaning ', spins_remaining);
+
       }
       if (!winners) {
         winners = winners_data[winners_data_dates[winners_data_dates.length - 1]][last_hour]['winners'] as string[]
@@ -68,7 +75,6 @@ function App() {
     } else {
       setWheelItems(wheel_items);
     }
-
   }
 
   const fetchSpinnerData = async () => {
@@ -79,6 +85,7 @@ function App() {
         'Content-Type': "application/json"
       }
     })
+
     let spinner_data = await spinner_data_res.json();
 
     let winners_data_res = await fetch(api_url + "winners-data", {
@@ -87,6 +94,7 @@ function App() {
         'Content-Type': "application/json"
       }
     })
+
     let winners_data = await winners_data_res.json();
 
     let end_time = new Date(spinner_data['end_time']);
@@ -94,36 +102,14 @@ function App() {
 
     localStorage.setItem('spinner_data', JSON.stringify(spinner_data));
     localStorage.setItem("winners_data", JSON.stringify(winners_data));
+
     setSpinnerData(start_time);
     setWinnersData(winners_data);
     setSelectedDate(start_time);
     setLoading(false);
     return {
-      start_time, end_time
-    }
-  }
-
-  const handlePrevDate = () => {
-    let cur_date = new Date(selected_date.toString());
-    cur_date.setDate(cur_date.getDate() - 1);
-    if (winners_data && winners_data && (cur_date.toLocaleDateString() in winners_data)) {
-      setPageNo(page_no + 1)
-      setSelectedDate(cur_date)
-      setSpinnerData(cur_date)
-    } else {
-      alert("No previous records found")
-    }
-  }
-
-  const handleNextDate = () => {
-    let cur_date = new Date(selected_date.toString());
-    cur_date.setDate(cur_date.getDate() + 1);
-    if (winners_data && page_no > 1) {
-      setPageNo(page_no - 1)
-      setSelectedDate(cur_date)
-      setSpinnerData(cur_date)
-    } else {
-      alert("No further winners found!")
+      start_time,
+      end_time
     }
   }
 
@@ -131,7 +117,11 @@ function App() {
     if (no_of_spins_remaining > 0) {
       fetchSpinnerData();
       let end_time = new Date();
-      end_time?.setSeconds(end_time.getSeconds() + 20)
+      end_time?.setSeconds(end_time.getSeconds() + 10)
+      setTimeout(() => {
+        console.log("On count down complete");
+
+      }, 5000)
       setTimerEndDate(end_time);
       setTimerStartDate(new Date())
       setNoOfSpinsRemaining(no_of_spins_remaining - 1)
@@ -156,56 +146,38 @@ function App() {
       {wheel_items && !loading && winners_data &&
         <>
           <div style={{ gap: "4rem", minHeight: "90vh", padding: "1rem 0" }} className='flex w-fit lg:gap-20 flex-row flex-wrap justify-center items-center mx-auto py-9'>
-            <Wheel selected_item={winner} items={wheel_items}></Wheel>
+            <Wheel
+              onFinish={() => {
+                console.log('finished');
+
+              }}
+              selected_item={winner} items={wheel_items}></Wheel>
             <CountDown on_Complete={onCountDownComplete} start_date={timer_start_date} end_date={timer_end_date ? timer_end_date : new Date()} />
           </div>
           <div style={{ padding: "0 5rem" }} className='flex flex-col  '>
-            {/* {show_spin_button &&
-              <button style={{ marginBottom: "1rem" }}
-                className='inline-block px-6 py-2 border-2 border-blue-400 text-blue-400 font-medium text-xs leading-tight uppercase rounded-full hover:bg-black hover:bg-opacity-5 focus:outline-none focus:ring-0 transition duration-150 ease-in-out w-fit self-center my-10'
-                onClick={fetchSpinnerData}>Spin</button>
-            }
-            {!show_spin_button &&
-              <button
-                type="button"
-                style={{ marginBottom: "1rem", cursor: "not-allowed" }}
-                className="w-fit inline-block px-6 py-2 border-2 border-gray-600 text-gray-400 font-medium text-xs leading-tight uppercase rounded-full hover:bg-black hover:bg-opacity-5 focus:outline-none focus:ring-0 transition duration-150 ease-in-out w-fit self-center my-10 ">
-                Spin
-              </button>
-            } */}
+
             <h2 className='text-white font-medium mx-auto  text-center text-4xl'>Today Winners</h2>
-            <div className='flex flex-row  items-center w-fit ml-auto gap-4'>
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width={35}
-                height={35}
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="white"
-                strokeWidth={2}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                onClick={handleNextDate}
-                className="cursor-pointer feather feather-chevron-left"
-              >
-                <polyline points="15 18 9 12 15 6" />
-              </svg>
-              <p className='font-medium text-white'>{page_no}</p>
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width={35}
-                height={35}
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="white"
-                strokeWidth={2}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                onClick={handlePrevDate}
-                className="cursor-pointer feather feather-chevron-right"
-              >
-                <polyline points="9 18 15 12 9 6" />
-              </svg>
+            <div style={{marginTop:"3rem"}} className='flex flex-row  items-center justify-center mt-8 lg:justify-end w-full'>
+
+              {!show_calender &&
+                <p
+                  onClick={() => setShowCalender(true)}
+                  className='cursor-pointer font-medium text-white'>{DateToString(selected_date)}</p>
+              }
+              {show_calender &&
+                <Calendar
+                  className={'date-calender'}
+                  onChange={(new_date: Date) => {
+                    setShowCalender(false);
+                    setSelectedDate(new_date)
+                  }}
+                  value={selected_date}
+                  calendarType='US'
+                  defaultActiveStartDate={selected_date}
+                  minDate={stringToDate(Object.keys(winners_data)[0])}
+                  maxDate={new Date()}
+                />
+              }
             </div>
           </div>
           {/* Table */}
@@ -220,7 +192,7 @@ function App() {
                           scope="col"
                           className="text-sm font-medium text-white px-6 py-4"
                         >
-                          {selected_date.toLocaleDateString().replaceAll("/", '-')}
+                          {DateToString(selected_date).replaceAll("/", '-')}
                         </th>
                         <th
                           scope="col"
@@ -243,11 +215,11 @@ function App() {
                       </tr>
                     </thead>
                     <tbody>
-                      {(winners_data[(selected_date.toLocaleDateString() as any)]) &&
-                        Object.keys((winners_data[(selected_date.toLocaleDateString() as any)]))
+                      {(winners_data[(DateToString(selected_date) as any)]) &&
+                        Object.keys((winners_data[(DateToString(selected_date) as any)]))
                           .map((hour: any) => {
                             let current_time = hour;
-                            let current_winner_data = winners_data[(selected_date.toLocaleDateString() as any)][hour]
+                            let current_winner_data = winners_data[(DateToString(selected_date) as any)][hour]
                             if (hour > 12) {
                               current_time = hour + " : " + 15 + "PM"
                             } else {
@@ -271,9 +243,11 @@ function App() {
                     </tbody>
                   </table>
                   {!(
-                    winners_data[(selected_date.toLocaleDateString() as any)]
+                    winners_data[(DateToString(selected_date) as any)]
                   ) &&
-                    <p style={{ padding: '4rem', fontSize: "1.4rem", margin: "auto", textAlign: 'center' }} className='text-white '>No winner yet today</p>
+                    <>
+                      <p style={{ padding: '4rem', fontSize: "1.4rem", margin: "auto", textAlign: 'center' }} className='text-white '>No winner yet today</p>
+                    </>
                   }
                 </div>
               </div>

@@ -9,8 +9,8 @@ const app = express();
 const __dirname = path.resolve(path.dirname(''));
 const initial_spinner_data_file_path = path.join(__dirname, 'items.json')
 const spinner_data_file_path = path.join(__dirname, 'spinner_data.json');
-
 utils.randomItemSetter()
+
 app.use(express.json(), express.urlencoded({ extended: true }), cors())
 
 app.get("/spinner-data", (req, res) => {
@@ -20,18 +20,17 @@ app.get("/spinner-data", (req, res) => {
     let current_time = new Date();
     let end_date = new Date();
     let end_hour = 12;
-    if (Object.keys(spinner_data_file).length === 0) {
+    
+    if (Object.keys(spinner_data_file).length === 0 || !spinner_data_file[today_date_str]) {
         const initial_items = JSON.parse(fs.readFileSync(initial_spinner_data_file_path))
+        if(!spinner_data_file){
+            spinner_data_file = {}
+        }
         spinner_data_file[today_date_str] = initial_items;
+        console.log(JSON.stringify(spinner_data_file).length , '30');
         fs.writeFileSync(spinner_data_file_path, JSON.stringify(spinner_data_file))
     }
 
-    if (!spinner_data_file[today_date_str]) {
-        let yesterday = new Date();
-        yesterday.setDate(yesterday.getDate() - 1);
-        spinner_data_file[today_date_str] = (spinner_data_file[yesterday.toLocaleDateString()]);
-        fs.writeFileSync(spinner_data_file_path, JSON.stringify(spinner_data_file))
-    }
     if (current_time.getHours() > 21) {
         end_hour = (24 - current_time.getHours()) + spin_hours[0]
     } else {
