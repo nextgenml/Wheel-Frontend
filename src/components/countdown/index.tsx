@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect} from 'react';
 import './index.css'
 
 interface Props {
@@ -36,7 +36,6 @@ export default function CountDown({ end_date, start_date, on_Complete }: Props) 
             document.getElementById('min').innerText = minute
             document.getElementById('sec').innerText = sec
         }
-
     }
     useEffect(() => {
         _id = setInterval(countDown, 1000)
